@@ -31,9 +31,15 @@ var (
 )
 
 type FileRegistry struct {
+	key                 string
+	expiryTimeMinutes   string
 	expiredAt           time.Time
 	multipartFile       multipart.File
 	multipartFileHeader *multipart.FileHeader
+}
+
+func (fr FileRegistry) String() string {
+	return fmt.Sprintf("key:%v, expiryTimeMinutes:%v, expiredAt:%v, multipartFileHeader.Header:%v", fr.key, fr.expiryTimeMinutes, fr.expiredAt, fr.multipartFileHeader.Header)
 }
 
 func init() {
@@ -46,8 +52,6 @@ func main() {
 	//-------------------------
 	// 引数のパース
 	flag.Parse()
-	// Required parameter
-	// - [Can Go's `flag` package print usage? - Stack Overflow](https://stackoverflow.com/questions/23725924/can-gos-flag-package-print-usage)
 	if *argsHelp {
 		flag.Usage()
 		os.Exit(0)
@@ -75,17 +79,24 @@ func main() {
 
 		key := r.FormValue("key")
 		expiryTimeMinutes := r.FormValue("expiryTimeMinutes")
+		fileExpirationMinutes := *argsFileExpiration
+		// expiryTimeMinutesで指定された数値がintにキャストできる値だった場合は、ファイルの期限を指定分に設定する
+		if expiryTimeMinutesInt, err := strconv.Atoi(expiryTimeMinutes); err == nil {
+			fileExpirationMinutes = expiryTimeMinutesInt
+		}
 		file, fileHeader, _ := r.FormFile("file")
-		logger.Println("key:"+key, ",", "expiryTimeMinutes:"+expiryTimeMinutes, ",", fileHeader.Header)
-
 		mutex.Lock()
 		defer func() { mutex.Unlock() }()
 		fileRegistryMap[key] = FileRegistry{
-			expiredAt:           time.Now().Add(time.Duration(*argsFileExpiration) * time.Minute),
+			key:                 key,
+			expiryTimeMinutes:   expiryTimeMinutes,
+			expiredAt:           time.Now().Add(time.Duration(fileExpirationMinutes) * time.Minute),
 			multipartFile:       file,
 			multipartFileHeader: fileHeader,
 		}
-		responseJson(w, 200, `{"message":"key:`+key+`, expiryTimeMinutes:`+expiryTimeMinutes+`, fileHeader:`+fmt.Sprintf("%s", fileHeader.Header)+`"}`)
+		responseBody := `{"message":"` + fileRegistryMap[key].String() + `"}`
+		logger.Println(responseBody)
+		responseJson(w, 200, responseBody)
 	})
 
 	// download
@@ -103,10 +114,13 @@ func main() {
 			responseJson(w, 404, `{"message":"file not found."}`)
 			return
 		}
+		logger.Println(fileRegistryMap[key].String())
 		w.WriteHeader(200)
-		w.Header().Add("Content-Type", fileRegistryMap[key].multipartFileHeader.Header.Get("Content-Type"))
-		w.Header().Add("Content-Disposition", fileRegistryMap[key].multipartFileHeader.Header.Get("Content-Disposition"))
+		w.Header().Set("Content-Type", fileRegistryMap[key].multipartFileHeader.Header.Get("Content-Type"))
+		w.Header().Set("Content-Disposition", "attachment; filename="+fileRegistryMap[key].multipartFileHeader.Filename)
 		io.Copy(w, fileRegistryMap[key].multipartFile)
+		// reset
+		fileRegistryMap[key].multipartFile.Seek(0, io.SeekStart)
 	})
 
 	// 期限切れのファイルを削除するgoroutine
@@ -117,8 +131,8 @@ func main() {
 				mutex.Lock()
 				defer func() { mutex.Unlock() }()
 				for key, fileRegistry := range fileRegistryMap {
-					if fileRegistry.expiredAt.After(time.Now()) {
-						logger.Println("[File cleaner goroutine] File expired. >> key:"+key, ",", "expiredAt:"+fileRegistry.expiredAt.String(), ",", fileRegistry.multipartFileHeader.Header)
+					if fileRegistry.expiredAt.Before(time.Now()) {
+						logger.Println("[File cleaner goroutine] File expired. >> " + fileRegistry.String())
 						delete(fileRegistryMap, key)
 					}
 				}
@@ -137,8 +151,7 @@ func main() {
 ######    ##  ##       ######         ##    ######   ## ### ## ########     ########  ######   ##   ####  ##   ######     ##    ########     ##    
 ##        ##  ##       ##             ##    ##       ##     ## ##           ##   ##   ##       ##    ##   ##        ##    ##    ##   ##      ##    
 ##        ##  ##       ##             ##    ##       ##     ## ##           ##    ##  ##       ##    ##   ##  ##    ##    ##    ##    ##     ##    
-##       #### ######## ########       ##    ######## ##     ## ##           ##     ## ########  ######   ####  ######     ##    ##     ##    ##    
-`)
+##       #### ######## ########       ##    ######## ##     ## ##           ##     ## ########  ######   ####  ######     ##    ##     ##    ##`)
 	err = http.ListenAndServe(":"+strconv.Itoa(*argsPort), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
