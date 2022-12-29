@@ -19,10 +19,10 @@ Usage of /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build570030480/b001
 go run main.go
 
 // build
-APP=/tmp/ftr; go build -ldflags="-s -w" -o ${APP} .; chmod +x ${APP}
+APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} .; chmod +x ${APP}
 
 // start
-/tmp/ftr
+/tmp/tfr
 ```
 
 ## API
