@@ -3,7 +3,7 @@
 Temporal file registry written by golang.
 
 ```
-// help
+# help
 go run main.go -h
 Usage of /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build570030480/b001/exe/main:
   -e int
@@ -15,13 +15,19 @@ Usage of /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build570030480/b001
   -p int
     	[optional] port (default 8888)
 
-// execute
+
+# execute
 go run main.go
 
-// build
-APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} .; chmod +x ${APP}
 
-// start
+# build
+APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP}
+# APP=/tmp/tfr; GOOS=linux GOARCH=amd64   go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # linux
+# APP=/tmp/tfr; GOOS=darwin GOARCH=amd64  go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # macOS
+# APP=/tmp/tfr; GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # windows
+
+
+# start
 /tmp/tfr
 ```
 
@@ -30,9 +36,8 @@ APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} .; chmod +x ${APP}
 ### Upload
 
 ```
-curl --location --request POST 'http://localhost:8888/upload' \
+curl --location --request POST 'http://localhost:8888/tempFileRegistry/api/v1/upload' \
 > --form 'key="kioveyzrrt287opddhk9"' \
-> --form 'expiryTimeMinutes="10"' \
 > --form 'file=@"/private/tmp/app"'
 {"message":"key:kioveyzrrt287opddhk9, expiryTimeMinutes:10, fileHeader:map[Content-Disposition:[form-data; name="file"; filename="app"] Content-Type:[application/octet-stream]]"}
 ```
@@ -40,5 +45,5 @@ curl --location --request POST 'http://localhost:8888/upload' \
 ### Download
 
 ```
-curl -vvv http://localhost:8888/download?key=kioveyzrrt287opddhk9 -o /tmp/app2
+curl http://localhost:8888/tempFileRegistry/api/v1/download?key=kioveyzrrt287opddhk9 -o /tmp/app2
 ```

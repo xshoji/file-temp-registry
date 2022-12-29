@@ -15,7 +15,8 @@ import (
 
 // Size constants
 const (
-	MB = 1 << 20
+	MB            = 1 << 20
+	UrlPathPrefix = "/tempFileRegistry/api/v1"
 )
 
 var (
@@ -60,7 +61,7 @@ func main() {
 	//-------------------------
 	// 各種パスの処理
 	// upload
-	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(UrlPathPrefix+"/upload", func(w http.ResponseWriter, r *http.Request) {
 		logger.Println(r.RemoteAddr, r.RequestURI, r.Header)
 		// - [How can I handle http requests of different methods to / in Go? - Stack Overflow](https://stackoverflow.com/questions/15240884/how-can-i-handle-http-requests-of-different-methods-to-in-go)
 		if allowedHttpMethod := http.MethodPost; r.Method != allowedHttpMethod {
@@ -100,14 +101,13 @@ func main() {
 	})
 
 	// download
-	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(UrlPathPrefix+"/download", func(w http.ResponseWriter, r *http.Request) {
 		logger.Println(r.RemoteAddr, r.RequestURI, r.Header)
 		if allowedHttpMethod := http.MethodGet; r.Method != allowedHttpMethod {
 			responseJson(w, 405, `{"message":"Method Not Allowed. (Only `+allowedHttpMethod+` is allowed)"}`)
 			return
 		}
 		key := r.URL.Query().Get("key")
-		logger.Println("key:" + key)
 		mutex.Lock()
 		defer func() { mutex.Unlock() }()
 		if _, ok := fileRegistryMap[key]; !ok {
