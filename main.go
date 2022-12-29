@@ -154,7 +154,7 @@ func main() {
    ##    ######## ##     ## ##           ##       #### ######## ########    ##     ## ########  ######   ####  ######     ##    ##     ##    ##`)
 	err = http.ListenAndServe(":"+strconv.Itoa(*argsPort), nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		logger.Fatal("ListenAndServe: ", err)
 	}
 }
 
