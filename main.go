@@ -21,16 +21,49 @@ const (
 
 var (
 	// Define boot arguments.
-	argsPort           = flag.Int("p", 8888 /*     */, "[optional] port")
-	argsFileExpiration = flag.Int("e", 10 /*       */, "[optional] default file expiration (minutes)")
-	argsMaxFileSize    = flag.Int64("m", 1024 /*   */, "[optional] max file size (MB)")
-	argsHelp           = flag.Bool("h", false /*   */, "\nhelp")
+	argsPort           = flag.Int("p", 8888 /*   */, "[optional] Port")
+	argsFileExpiration = flag.Int("e", 10 /*     */, "[optional] Default file expiration (minutes)")
+	argsMaxFileSize    = flag.Int64("m", 1024 /* */, "[optional] Max file size (MB)")
+	argsLogLevel       = flag.Int("l", 2 /*      */, "[optional] Log level (0:Panic, 1:Info, 2:Debug)")
+	argsHelp           = flag.Bool("h", false /* */, "\nhelp")
 	// Define application logic variables.
 	fileRegistryMap = map[string]FileRegistry{}
 	mutex           sync.Mutex
 	// 時刻と時刻のマイクロ秒、ディレクトリパスを含めたファイル名を出力
-	logger = log.New(os.Stdout, "[Logger] ", log.Llongfile|log.LstdFlags)
+	logger         = log.New(os.Stdout, "[Logger] ", log.Llongfile|log.LstdFlags)
+	loggerLogLevel = Debug
 )
+
+type LogLevel int
+
+const (
+	Panic LogLevel = iota
+	Info
+	Debug
+)
+
+// Level based logging in Golang https://www.linkedin.com/pulse/level-based-logging-golang-vivek-dasgupta
+func logging(loglevel LogLevel, logLogger *log.Logger, v ...interface{}) {
+	if loggerLogLevel < loglevel {
+		return
+	}
+	level := func() string {
+		switch loggerLogLevel {
+		case Panic:
+			return "Panic"
+		case Info:
+			return "Info"
+		case Debug:
+			return "Debug"
+		default:
+			return ""
+		}
+	}()
+	logLogger.Println(append([]interface{}{"[" + level + "]"}, v...)...)
+	if loggerLogLevel == Panic {
+		logLogger.Panic(v...)
+	}
+}
 
 type FileRegistry struct {
 	key                 string
@@ -57,12 +90,14 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	}
+	// set log level
+	loggerLogLevel = LogLevel(*argsLogLevel)
 
 	//-------------------------
 	// 各種パスの処理
 	// upload
 	http.HandleFunc(UrlPathPrefix+"/upload", func(w http.ResponseWriter, r *http.Request) {
-		logger.Println(r.RemoteAddr, r.RequestURI, r.Header)
+		logging(Debug, logger, r.RemoteAddr, r.RequestURI, r.Header)
 		// - [How can I handle http requests of different methods to / in Go? - Stack Overflow](https://stackoverflow.com/questions/15240884/how-can-i-handle-http-requests-of-different-methods-to-in-go)
 		if allowedHttpMethod := http.MethodPost; r.Method != allowedHttpMethod {
 			responseJson(w, 405, `{"message":"Method Not Allowed. (Only `+allowedHttpMethod+` is allowed)"}`)
@@ -96,13 +131,13 @@ func main() {
 			multipartFileHeader: fileHeader,
 		}
 		responseBody := `{"message":"` + fileRegistryMap[key].String() + `"}`
-		logger.Println(responseBody)
+		logging(Debug, logger, responseBody)
 		responseJson(w, 200, responseBody)
 	})
 
 	// download
 	http.HandleFunc(UrlPathPrefix+"/download", func(w http.ResponseWriter, r *http.Request) {
-		logger.Println(r.RemoteAddr, r.RequestURI, r.Header)
+		logging(Debug, logger, r.RemoteAddr, r.RequestURI, r.Header)
 		if allowedHttpMethod := http.MethodGet; r.Method != allowedHttpMethod {
 			responseJson(w, 405, `{"message":"Method Not Allowed. (Only `+allowedHttpMethod+` is allowed)"}`)
 			return
@@ -114,7 +149,7 @@ func main() {
 			responseJson(w, 404, `{"message":"file not found."}`)
 			return
 		}
-		logger.Println(fileRegistryMap[key].String())
+		logging(Debug, logger, fileRegistryMap[key].String())
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", fileRegistryMap[key].multipartFileHeader.Header.Get("Content-Type"))
 		w.Header().Set("Content-Disposition", "attachment; filename="+fileRegistryMap[key].multipartFileHeader.Filename)
@@ -132,7 +167,7 @@ func main() {
 				defer func() { mutex.Unlock() }()
 				for key, fileRegistry := range fileRegistryMap {
 					if fileRegistry.expiredAt.Before(time.Now()) {
-						logger.Println("[File cleaner goroutine] File expired. >> " + fileRegistry.String())
+						logging(Debug, logger, "[File cleaner goroutine] File expired. >>", fileRegistry.String())
 						delete(fileRegistryMap, key)
 					}
 				}
@@ -143,8 +178,8 @@ func main() {
 	//-------------------------
 	// Listen開始
 	var err error
-	logger.Printf("server(http) %d\n", *argsPort)
-	logger.Println(`Start application:
+	logging(Info, logger, "server(http)", *argsPort)
+	logging(Info, logger, `Start application:
 ######## ######## ##     ## ########     ######## #### ##       ########    ########  ########  ######   ####  ######  ######## ########  ##    ## 
    ##    ##       ###   ### ##     ##    ##        ##  ##       ##          ##     ## ##       ##    ##   ##  ##    ##    ##    ##     ##  ##  ##  
    ##    ##       #### #### ##     ##    ##        ##  ##       ##          ##     ## ##       ##         ##  ##          ##    ##     ##   ####   
@@ -154,7 +189,7 @@ func main() {
    ##    ######## ##     ## ##           ##       #### ######## ########    ##     ## ########  ######   ####  ######     ##    ##     ##    ##`)
 	err = http.ListenAndServe(":"+strconv.Itoa(*argsPort), nil)
 	if err != nil {
-		logger.Fatal("ListenAndServe: ", err)
+		logging(Panic, logger, "ListenAndServe:", err)
 	}
 }
 

@@ -37,8 +37,8 @@ APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP}
 
 ```
 curl --location --request POST 'http://localhost:8888/tempFileRegistry/api/v1/upload' \
-> --form 'key="kioveyzrrt287opddhk9"' \
-> --form 'file=@"/private/tmp/app"'
+--form 'key="kioveyzrrt287opddhk9"' \
+--form 'file=@"/private/tmp/app"'
 {"message":"key:kioveyzrrt287opddhk9, expiryTimeMinutes:10, fileHeader:map[Content-Disposition:[form-data; name="file"; filename="app"] Content-Type:[application/octet-stream]]"}
 ```
 
