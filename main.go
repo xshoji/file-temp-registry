@@ -28,7 +28,8 @@ var (
 	// Define application logic variables.
 	fileRegistryMap = map[string]FileRegistry{}
 	mutex           sync.Mutex
-	logger          = log.New(os.Stdout, "[Logger] ", log.Llongfile|log.LstdFlags)
+	// 時刻と時刻のマイクロ秒、ディレクトリパスを含めたファイル名を出力
+	logger = log.New(os.Stdout, "[Logger] ", log.Llongfile|log.LstdFlags)
 )
 
 type FileRegistry struct {
@@ -44,8 +45,7 @@ func (fr FileRegistry) String() string {
 }
 
 func init() {
-	// 時刻と時刻のマイクロ秒、ディレクトリパスを含めたファイル名を出力
-	log.SetFlags(log.Llongfile | log.LstdFlags)
+	// 何もしない
 }
 
 func main() {
