@@ -106,7 +106,6 @@ func main() {
 
 	//-------------------------
 	// Listen開始
-	var err error
 	logging(Info, logger, "server(http)", *argsPort)
 	logging(Info, logger, `Start application:
 ######## ######## ##     ## ########     ######## #### ##       ########    ########  ########  ######   ####  ######  ######## ########  ##    ## 
@@ -116,9 +115,8 @@ func main() {
    ##    ##       ##     ## ##           ##        ##  ##       ##          ##   ##   ##       ##    ##   ##        ##    ##    ##   ##      ##    
    ##    ##       ##     ## ##           ##        ##  ##       ##          ##    ##  ##       ##    ##   ##  ##    ##    ##    ##    ##     ##    
    ##    ######## ##     ## ##           ##       #### ######## ########    ##     ## ########  ######   ####  ######     ##    ##     ##    ##`)
-	err = http.ListenAndServe(":"+strconv.Itoa(*argsPort), nil)
-	if err != nil {
-		logging(Panic, logger, "ListenAndServe:", err)
+	if err := http.ListenAndServe(":"+strconv.Itoa(*argsPort), nil); err != nil {
+		logging(Panic, logger, err)
 	}
 }
 
