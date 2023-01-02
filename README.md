@@ -7,14 +7,15 @@ Temporal file registry written by golang.
 go run main.go -h
 Usage of /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build570030480/b001/exe/main:
   -e int
-    	[optional] default file expiration (minutes) (default 10)
+    	[optional] Default file expiration (minutes) (default 10)
   -h
     	help
+  -l int
+    	[optional] Log level (0:Panic, 1:Info, 2:Debug) (default 2)
   -m int
-    	[optional] max file size (MB) (default 1024)
+    	[optional] Max file size (MB) (default 1024)
   -p int
-    	[optional] port (default 8888)
-
+    	[optional] Port (default 8888)
 
 # execute
 go run main.go
