@@ -168,6 +168,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := r.URL.Query().Get("key")
+	deleteFlag := r.URL.Query().Get("delete")
 	mutex.Lock()
 	defer func() { mutex.Unlock() }()
 	if _, ok := fileRegistryMap[key]; !ok {
@@ -181,6 +182,10 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, fileRegistryMap[key].multipartFile)
 	// reset
 	fileRegistryMap[key].multipartFile.Seek(0, io.SeekStart)
+	// if specified "delete" parameter, target file will be deleted after response.
+	if deleteFlag == "true" {
+		delete(fileRegistryMap, key)
+	}
 }
 
 // 期限切れのファイルをお掃除する

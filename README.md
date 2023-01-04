@@ -46,5 +46,6 @@ curl --location --request POST 'http://localhost:8888/tempFileRegistry/api/v1/up
 ### Download
 
 ```
-curl http://localhost:8888/tempFileRegistry/api/v1/download?key=kioveyzrrt287opddhk9 -o /tmp/app2
+# delete: if "true" specified, target file will be deleted after response.
+curl "http://localhost:8888/tempFileRegistry/api/v1/download?key=kioveyzrrt287opddhk9&delete=true" -o /tmp/app2
 ```
