@@ -37,7 +37,7 @@ APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP}
 ### Upload
 
 ```
-curl --location --request POST 'http://localhost:8888/tempFileRegistry/api/v1/upload' \
+curl --location --request POST 'http://localhost:8888/temp-file-registry/api/v1/upload' \
 --form 'key="kioveyzrrt287opddhk9"' \
 --form 'file=@"/private/tmp/app"'
 {"message":"key:kioveyzrrt287opddhk9, expiryTimeMinutes:10, fileHeader:map[Content-Disposition:[form-data; name="file"; filename="app"] Content-Type:[application/octet-stream]]"}
@@ -47,5 +47,5 @@ curl --location --request POST 'http://localhost:8888/tempFileRegistry/api/v1/up
 
 ```
 # delete: if "true" specified, target file will be deleted after response.
-curl "http://localhost:8888/tempFileRegistry/api/v1/download?key=kioveyzrrt287opddhk9&delete=true" -o /tmp/app2
+curl "http://localhost:8888/temp-file-registry/api/v1/download?key=kioveyzrrt287opddhk9&delete=true" -o /tmp/app2
 ```
