@@ -16,7 +16,7 @@ import (
 // Size constants
 const (
 	MB            = 1 << 20
-	UrlPathPrefix = "/tempFileRegistry/api/v1"
+	UrlPathPrefix = "/temp-file-registry/api/v1"
 )
 
 var (
