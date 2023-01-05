@@ -22,14 +22,14 @@ go run main.go
 
 
 # build
-APP=/tmp/tfr; go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP}
+APP=/tmp/app; go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP}
 # APP=/tmp/tfr; GOOS=linux GOARCH=amd64   go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # linux
 # APP=/tmp/tfr; GOOS=darwin GOARCH=amd64  go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # macOS
 # APP=/tmp/tfr; GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ${APP} main.go; chmod +x ${APP} # windows
 
 
 # start
-/tmp/tfr
+/tmp/app
 ```
 
 ## API
@@ -48,4 +48,13 @@ curl --location --request POST 'http://localhost:8888/temp-file-registry/api/v1/
 ```
 # delete: if "true" specified, target file will be deleted after response.
 curl "http://localhost:8888/temp-file-registry/api/v1/download?key=kioveyzrrt287opddhk9&delete=true" -o /tmp/app2
+```
+
+## Release
+
+Release flow of this repository is integrated with github action.
+Git tag pushing triggers release job.
+
+```
+git tag v0.0.2 && git push --tags
 ```
