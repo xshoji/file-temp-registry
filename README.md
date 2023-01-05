@@ -1,6 +1,6 @@
-## Temp file registry
+## temp-file-registry
 
-Temporal file registry written by golang.
+temp-file-registry is temporal file registry written by golang.
 
 ```
 # help
