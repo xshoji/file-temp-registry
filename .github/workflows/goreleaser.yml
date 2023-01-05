@@ -25,4 +25,5 @@ jobs:
           version: latest
           args: release --rm-dist
         env:
+          # environment-variables - GitHub Actions - GoReleaser https://goreleaser.com/ci/actions/#environment-variables
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
