@@ -208,5 +208,5 @@ func cleanExpiredFile() {
 func responseJson(w http.ResponseWriter, statusCode int, bodyJson string) {
 	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", "application/json")
-	fmt.Fprintf(w, bodyJson)
+	fmt.Fprint(w, bodyJson)
 }
