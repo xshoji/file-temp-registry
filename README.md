@@ -1,21 +1,20 @@
 ## temp-file-registry
 
-temp-file-registry is temporal file registry written by golang.
+temp-file-registry is temporary file registry written by golang.
 
 ```
-# help
-go run main.go -h
-Usage of /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build570030480/b001/exe/main:
-  -e int
-    	[optional] Default file expiration (minutes) (default 10)
-  -h
-    	help
-  -l int
-    	[optional] Log level (0:Panic, 1:Info, 2:Debug) (default 2)
-  -m int
-    	[optional] Max file size (MB) (default 1024)
-  -p int
-    	[optional] Port (default 8888)
+$ go run main.go -h
+Usage: /var/folders/_q/dpw924t12bj25568xfxcd2wm0000gn/T/go-build106028678/b001/exe/main [OPTIONS]
+
+Description:
+  temp-file-registry is temporary file registry provided through an HTTP web API.
+
+Options:
+  -e, --expiration-minutes int    [optional] Default file expiration (minutes) (default 10)
+  -h, --help                      help
+  -l, --log-level int             [optional] Log level (0:Panic, 1:Info, 2:Debug) (default 2)
+  -m, --max-file-size-mb int      [optional] Max file size (MB) (default 1024)
+  -p, --port int                  [optional] Port (default 8888)
 
 # execute
 go run main.go

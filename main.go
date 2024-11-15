@@ -1,31 +1,39 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
 // Size constants
 const (
-	MB            = 1 << 20
-	UrlPathPrefix = "/temp-file-registry/api/v1"
+	MB                 = 1 << 20
+	CommandDescription = "temp-file-registry is temporary file registry provided through an HTTP web API."
+	UsageDummy         = "########"
+	UrlPathPrefix      = "/temp-file-registry/api/v1"
 )
 
 var (
 	// Define boot arguments.
-	argsPort           = flag.Int("p", 8888 /*   */, "[optional] Port")
-	argsFileExpiration = flag.Int("e", 10 /*     */, "[optional] Default file expiration (minutes)")
-	argsMaxFileSize    = flag.Int64("m", 1024 /* */, "[optional] Max file size (MB)")
-	argsLogLevel       = flag.Int("l", 2 /*      */, "[optional] Log level (0:Panic, 1:Info, 2:Debug)")
-	argsHelp           = flag.Bool("h", false /* */, "\nhelp")
+	//
+	argsPort           = defineIntParam("p", "port", "[optional] Port", 8888)
+	argsFileExpiration = defineIntParam("e", "expiration-minutes", "[optional] Default file expiration (minutes)", 10)
+	argsMaxFileSize    = defineInt64Param("m", "max-file-size-mb", "[optional] Max file size (MB)", 1024)
+	argsLogLevel       = defineIntParam("l", "log-level", "[optional] Log level (0:Panic, 1:Info, 2:Debug)", 2)
+	argsHelp           = defineBoolParam("h", "help", "help")
 	// Define application logic variables.
 	fileRegistryMap = map[string]FileRegistry{}
 	mutex           sync.Mutex
@@ -78,7 +86,7 @@ func (fr FileRegistry) String() string {
 }
 
 func init() {
-	// 何もしない
+	adjustUsage()
 }
 
 func main() {
@@ -209,4 +217,45 @@ func responseJson(w http.ResponseWriter, statusCode int, bodyJson string) {
 	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", "application/json")
 	fmt.Fprint(w, bodyJson)
+}
+
+// =======================================
+// Internal Utils
+// =======================================
+
+func defineIntParam(short, long, description string, defaultValue int) (v *int) {
+	v = flag.Int(short, 0, UsageDummy)
+	flag.IntVar(v, long, defaultValue, description)
+	return
+}
+
+func defineInt64Param(short, long, description string, defaultValue int64) (v *int64) {
+	v = flag.Int64(short, 0, UsageDummy)
+	flag.Int64Var(v, long, defaultValue, description)
+	return
+}
+
+func defineBoolParam(short, long, description string) (v *bool) {
+	v = flag.Bool(short, false, UsageDummy)
+	flag.BoolVar(v, long, false, description)
+	return
+}
+
+func adjustUsage() {
+	// Get default flags usage
+	b := new(bytes.Buffer)
+	func() { flag.CommandLine.SetOutput(b); flag.Usage(); flag.CommandLine.SetOutput(os.Stderr) }()
+	// Get default flags usage
+	re := regexp.MustCompile("(-\\S+)( *\\S*)+\n*\\s+" + UsageDummy + "\n*\\s+(-\\S+)( *\\S*)+\n\\s+(.+)")
+	usageParams := re.FindAllString(b.String(), -1)
+	maxLengthParam := 0.0
+	sort.Slice(usageParams, func(i, j int) bool {
+		maxLengthParam = math.Max(maxLengthParam, math.Max(float64(len(re.ReplaceAllString(usageParams[i], "$1, -$3$4"))), float64(len(re.ReplaceAllString(usageParams[j], "$1, -$3$4")))))
+		return strings.Compare(usageParams[i], usageParams[j]) == -1
+	})
+	usage := strings.Replace(strings.Replace(strings.Split(b.String(), "\n")[0], ":", " [OPTIONS]", -1), " of ", ": ", -1) + "\n\nDescription:\n  " + CommandDescription + "\n\nOptions:\n"
+	for _, v := range usageParams {
+		usage += fmt.Sprintf("%-6s%-"+strconv.Itoa(int(maxLengthParam))+"s", re.ReplaceAllString(v, "  $1,"), re.ReplaceAllString(v, "-$3$4")) + re.ReplaceAllString(v, "$5\n")
+	}
+	flag.Usage = func() { _, _ = fmt.Fprintf(flag.CommandLine.Output(), usage) }
 }
