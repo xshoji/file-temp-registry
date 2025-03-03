@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,12 +25,13 @@ const (
 )
 
 var (
+	// Command options ( the -h, --help option is defined by default in the flag package )
+	commandOptionMaxLength = 0
 	// Define boot arguments.
 	argsPort           = defineFlagValue("p", "port", "Port", 8888).(*int)
 	argsFileExpiration = defineFlagValue("e", "expiration-minutes", "Default file expiration (minutes)", 10).(*int)
 	argsMaxFileSize    = defineFlagValue("m", "max-file-size-mb", "Max file size (MB)", int64(1024)).(*int64)
 	argsLogLevel       = defineFlagValue("l", "log-level", "Log level (0:Panic, 1:Info, 2:Debug)", 2).(*int)
-	argsHelp           = defineFlagValue("h", "help", "Help", false).(*bool)
 	// Define application logic variables.
 	fileRegistryMap = map[string]FileRegistry{}
 	mutex           sync.Mutex
@@ -85,7 +84,7 @@ func (fr FileRegistry) String() string {
 }
 
 func init() {
-	formatUsage(CommandDescription)
+	formatUsage(CommandDescription, &commandOptionMaxLength, new(bytes.Buffer))
 }
 
 func main() {
@@ -93,10 +92,7 @@ func main() {
 	//-------------------------
 	// 引数のパース
 	flag.Parse()
-	if *argsHelp {
-		flag.Usage()
-		os.Exit(0)
-	}
+
 	// set log level
 	loggerLogLevel = LogLevel(*argsLogLevel)
 
@@ -243,21 +239,18 @@ func defineFlagValue(short, long, description string, defaultValue any) (f any) 
 	return
 }
 
-func formatUsage(description string) {
+func formatUsage(description string, maxLength *int, buffer *bytes.Buffer) {
 	// Get default flags usage
-	b := new(bytes.Buffer)
-	func() { flag.CommandLine.SetOutput(b); flag.Usage(); flag.CommandLine.SetOutput(os.Stderr) }()
-	// Get default flags usage
+	func() { flag.CommandLine.SetOutput(buffer); flag.Usage(); flag.CommandLine.SetOutput(os.Stderr) }()
 	re := regexp.MustCompile("(-\\S+)( *\\S*)+\n*\\s+" + UsageDummy + ".*\n*\\s+(-\\S+)( *\\S*)+\n\\s+(.+)")
-	usageOptions := re.FindAllString(b.String(), -1)
-	maxLength := 0.0
-	sort.Slice(usageOptions, func(i, j int) bool {
-		maxLength = math.Max(maxLength, math.Max(float64(len(re.ReplaceAllString(usageOptions[i], "$1, -$3$4"))), float64(len(re.ReplaceAllString(usageOptions[j], "$1, -$3$4")))))
-		return strings.Compare(usageOptions[i], usageOptions[j]) == -1
-	})
-	usage := strings.Replace(strings.Replace(strings.Split(b.String(), "\n")[0], ":", " [OPTIONS]", -1), " of ", ": ", -1) + "\n\nDescription:\n  " + description + "\n\nOptions:\n"
+	usageFirst := strings.Replace(strings.Replace(strings.Split(buffer.String(), "\n")[0], ":", " [OPTIONS] [-h, --help]", -1), " of ", ": ", -1) + "\n\nDescription:\n  " + description + "\n\nOptions:\n"
+	usageOptions := re.FindAllString(buffer.String(), -1)
 	for _, v := range usageOptions {
-		usage += fmt.Sprintf("%-6s%-"+strconv.Itoa(int(maxLength))+"s", re.ReplaceAllString(v, "  $1,"), re.ReplaceAllString(v, "-$3$4")) + re.ReplaceAllString(v, "$5\n")
+		*maxLength = max(*maxLength, len(re.ReplaceAllString(v, "$1, -$3$4")))
 	}
-	flag.Usage = func() { _, _ = fmt.Fprintf(flag.CommandLine.Output(), usage) }
+	usageOptionsRep := make([]string, 0)
+	for _, v := range usageOptions {
+		usageOptionsRep = append(usageOptionsRep, fmt.Sprintf("%-6s%-"+strconv.Itoa(*maxLength)+"s", re.ReplaceAllString(v, "  $1,"), re.ReplaceAllString(v, "-$3$4"))+re.ReplaceAllString(v, "$5\n"))
+	}
+	flag.Usage = func() { _, _ = fmt.Fprintf(flag.CommandLine.Output(), usageFirst+strings.Join(usageOptionsRep, "")) }
 }
